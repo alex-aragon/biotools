@@ -3,8 +3,8 @@
 # github: rodriguezmDNA
 # twitter: @rodriguezmDNA
 ####################################
-## Multi-line FASTA to single lined 
-# Remove break lines on a FASTA file
+## Filter a FASTA file
+# given a list (in txt format)
 # Created 2019.02.26
 # Last modified 2019.02.26
 
@@ -16,8 +16,10 @@ display_help() {
     echo "Usage: $0 [option...] " >&2
     echo
     echo "   -h            this helpful help"
-    echo "   -i            Input (multilined) FASTA file (.fa|.fasta extension)"
-    echo "   -o            [optional] name of output single-lined FASTA"
+    echo "   -i            Input single-lined FASTA file (.fa|.fasta extension)"
+ echo -e "   -l            A list with names of genes of interest to filter the FASTA file:
+                 Single column file (with no header)"
+    echo "   -o            [optional] output file name"
     echo
     echo " if -o is not submitted, the program generates a new file with extension _SL.fa"
     echo -e "\n Don't panic!"
@@ -31,22 +33,25 @@ if [ $# -eq 0 ]
     display_help
 fi
 
+verbose=false
 
-while getopts ':h i: o:' option; do
+while getopts ':h l:i:o: v' option; do
   case "$option" in
     h) display_help
        exit
        ;;
     i) inputFASTA=$OPTARG     ;;
+    l) inputGOI=$OPTARG       ;;
     o) outputFASTA=$OPTARG    ;;
+    v) verbose=true           ;; #Flag
     :) printf "missing value for -%s\n" "$OPTARG" >&2
        display_help
        exit 1
-       ;;
+                              ;;
    \?) printf "illegal option: -%s\n" "$OPTARG" >&2
        display_help
        exit 1
-       ;;
+                              ;;
   esac
 done
 shift $((OPTIND - 1))
@@ -57,16 +62,25 @@ if [[  -z  $inputFASTA ]] ; then
 	display_help
 fi
 
+if [[  -z  $inputGOI ]] ; then
+  echo -e "\nNeed a list of genes to filter\n" >&2
+  display_help
+fi
 
 if [[  -z  $outputFASTA ]] ; then
-  
-  outputFASTA="${inputFASTA%.fa*}_sl.fa"
-  echo "No output given, saving file as $outputFASTA"
+  outputFASTA="${inputFASTA%.fa*}_filtered.fa"
+  echo "No output given, saving as $outputFASTA"
 fi
 
 
-echo `gsed ' />/ !{ :Flow N; />/ !{ s/\n// ;} ; tFlow ; P ; D ;} ' $inputFASTA > $outputFASTA`
+if  ($verbose); then
+  echo
+  echo "Using $inputGOI, to filter $inputFASTA"
+  echo "Saving to: $outputFASTA"
+fi
 
+
+echo `grep -A 1 -w -f  $inputGOI $inputFASTA |sed '/^--$/d' > $outputFASTA`
 
 
 ################################################################################################

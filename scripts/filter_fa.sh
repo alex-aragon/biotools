@@ -3,8 +3,8 @@
 # github: rodriguezmDNA
 # twitter: @rodriguezmDNA
 ####################################
-## Multi-line FASTA to single lined 
-# Remove break lines on a FASTA file
+## Filter a fasta file
+#
 # Created 2019.02.26
 # Last modified 2019.02.26
 
@@ -32,7 +32,7 @@ if [ $# -eq 0 ]
 fi
 
 
-while getopts ':h i: o:' option; do
+while getopts ':h i: :o' option; do
   case "$option" in
     h) display_help
        exit
@@ -59,9 +59,8 @@ fi
 
 
 if [[  -z  $outputFASTA ]] ; then
-  
+  echo "no output given"
   outputFASTA="${inputFASTA%.fa*}_sl.fa"
-  echo "No output given, saving file as $outputFASTA"
 fi
 
 
