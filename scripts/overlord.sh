@@ -13,6 +13,7 @@ display_help() {
     echo
     echo "   --multi2single        Calls a program to remove line breaks from a multi-lined fasta"
     echo "   --filterFASTA         Filter FASTA file based on a list of genes of interest"
+    echo "   -v                    verbose"
     echo "   -h, --help            this helpful help"
     echo
     # echo some stuff here for the -a or --add-options 
@@ -39,7 +40,7 @@ while getopts ':h -: io:' option; do
                            scripts/multi2single_FASTA.sh $@ #Calls the bash script with the rest of the arguments
                            ;;
           "filterFASTA"*) 
-                           shift #Moves over to the next parameters
+                           shift
                            scripts/filter_FASTA.sh $@ #Calls the bash script with the rest of the arguments
                            ;;
           "help"*) display_help
