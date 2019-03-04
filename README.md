@@ -1,2 +1,2 @@
 # biotools
-Tools for root atlas project
+Bash tools for biodata

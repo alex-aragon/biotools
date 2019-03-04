@@ -9,7 +9,7 @@
 # Last modified 2019.02.26
 
 
-orCall=$@
+orCall=$0$@
 ## Functions
 #################
 display_help() {
@@ -17,28 +17,23 @@ display_help() {
     echo
     echo "   -h            this helpful help"
     echo "   -i            Input (multilined) FASTA file (.fa|.fasta extension)"
-    echo "   -o            [optional] name of output single-lined FASTA"
+    echo "   -f            If selected, will check the whole FASTA file; default checks a subset"
     echo
-    echo " if -o is not submitted, the program generates a new file with extension _SL.fa"
+    
     echo -e "\n Don't panic!"
     # echo some stuff here for the -a or --add-options 
     exit 1
 }
 
-# If no argument send help
-if [ $# -eq 0 ]
-  then
-    display_help
-fi
+useFull=0;
 
-
-while getopts ':h i: o:' option; do
+while getopts ':h i: :f' option; do
   case "$option" in
     h) display_help
        exit
        ;;
     i) inputFASTA=$OPTARG     ;;
-    o) outputFASTA=$OPTARG    ;;
+    f) useFull=1    ;;
     :) printf "missing value for -%s\n" "$OPTARG" >&2
        display_help
        exit 1
@@ -51,6 +46,7 @@ while getopts ':h i: o:' option; do
 done
 shift $((OPTIND - 1))
 
+
 ## Check that the parameters aren't empty.
 if [[  -z  $inputFASTA ]] ; then
 	echo -e "\nNeed a FASTA file\n" >&2
@@ -58,19 +54,53 @@ if [[  -z  $inputFASTA ]] ; then
 fi
 
 
-if [[  -z  $outputFASTA ]] ; then
+
+### Function to get the line number of the file
+function getMaxV(){
+    maxV=`wc -l $inputFASTA | awk -F " " '{print $1 }'`
+    return $maxV
+}
+
+### Function to check if multifasta
+function checkMultiline(){
+    awk -v useFull=$useFull -v maxV=$maxV '
+        BEGIN {  
+                minV=1;
+                counter=0; #Used to count the number of uneven lines that are not FASTA identifier (start with >)   
+                    
+                ## Unless specificed, use a portion of the whole dataset.
+                if (useFull) {N= int(maxV);} else { N=int(maxV/4/2);} 
+                ## The next block will generate a list of random numbers without replacement.
+                for (i = 1; i <= N; i++) {\
+                        v=int(minV+rand()*(maxV-minV+1)); #Generate a random number between min and max #If already on the list, go back and retry, else, add to list.
+                        if(v in ranVar) i-- ; else { ranVar[v]++ }} 
+                        }
+        # Loop over the text
+                # If the row index is on the list to be sampled and it is a
+              {
+                if (NR in ranVar && NR%2!=0  && $0 !~ />/) {counter+=1} #{print NR, $0; counter+=1} 
+              }
+        END { print counter}' $inputFASTA  
   
-  outputFASTA="${inputFASTA%.fa*}_sl.fa"
-  echo "No output given, saving file as $outputFASTA"
+}
+
+
+getMaxV
+
+
+if [ `checkMultiline` -ne 0 ]
+  then
+    echo $inputFASTA "is multifasta";
+    #gsed '/>/ !{ :Flow N; />/ !{ s/\n// ;} ; tFlow ; P ; D ;}' $inputFASTA | wc -l 
+  else  
+    echo $inputFASTA "is single-lined FASTA";
 fi
-
-
-echo `gsed ' />/ !{ :Flow N; />/ !{ s/\n// ;} ; tFlow ; P ; D ;} ' $inputFASTA > $outputFASTA`
-
 
 
 ################################################################################################
 ####################################
+
+
 
 
 ## Record time
@@ -104,6 +134,6 @@ end_time=`date +%s`
 
 #echo -e "\nParameters used: $bwtParams"  2>&1 | tee -a $logPath
 echo -e "\n execution time was `expr $end_time - $start_time` s."  #2>&1 | tee -a $logPath
-echo -e "\n Call mode: $0 $orCall"  #2>&1 | tee -a $logPath
+echo -e "\n Call mode: $orCall"  #2>&1 | tee -a $logPath
 echo -e "\nDone `date` \n-----------"  #2>&1 | tee -a $logPath
 ##Done
